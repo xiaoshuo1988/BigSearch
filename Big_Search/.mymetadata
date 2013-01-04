@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project-module
+  type="WEB"
+  name="Big_Search"
+  id="myeclipse.1355123446999"
+  context-root="/Big_Search"
+  j2ee-spec="5.0"
+  archive="Big_Search.war">
+  <attributes>
+    <attribute name="webrootdir" value="/WebRoot" />
+  </attributes>
+</project-module>
+
