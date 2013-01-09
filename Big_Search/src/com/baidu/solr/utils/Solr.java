@@ -1,14 +1,16 @@
 package com.baidu.solr.utils;
 
-
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.net.MalformedURLException;
 import java.util.Iterator;
 import java.util.List;
 
 import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.CloudSolrServer;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.client.solrj.request.ContentStreamUpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -26,11 +28,14 @@ import org.dom4j.io.XMLWriter;
 import com.baidu.solr.model.Text;
 
 public class Solr {
+	public static final boolean CLOUD = true;
+	public static final boolean HTTP = false;
 
-	private final static String URL = "http://localhost:8080/solr";
+	private final static String URL = "localhost:8983/solr";
+	private final static String ZK_URL = "localhost:9983";
 	private int count = 0;
 
-	private HttpSolrServer server = null;
+	private SolrServer server = null;
 
 	/**
 	 * 添加索引
@@ -38,7 +43,7 @@ public class Solr {
 	 * @param text
 	 */
 	public void addField(Text text) {
-		init();
+		getServer(HTTP);
 		SolrInputDocument doc = new SolrInputDocument();
 		doc.addField("id", String.valueOf(text.getId()));
 		doc.addField("s_title", text.getTitle());
@@ -62,7 +67,7 @@ public class Solr {
 	 */
 	public void delIndex(String command) {
 		try {
-			init();
+			getServer(HTTP);
 			server.deleteByQuery(command);
 			if (server != null) {
 				server.commit();
@@ -148,8 +153,18 @@ public class Solr {
 		}
 	}
 
-	public void init() {
-		server = new HttpSolrServer(URL);
+	public void getServer(boolean server_type) {
+		if (server_type) {
+			try {
+				CloudSolrServer cloud = new CloudSolrServer(ZK_URL);
+				cloud.setDefaultCollection("collection1");
+				server = cloud;
+			} catch (MalformedURLException e) {
+				e.printStackTrace();
+			}
+		} else {
+			server = new HttpSolrServer(URL);
+		}
 	}
 
 	/**
@@ -159,7 +174,7 @@ public class Solr {
 	 *            待上传的文件目录
 	 */
 	public void sendToSolrTK(String filePath) {
-		init();
+		getServer(CLOUD);
 		File file = new File(filePath);
 		Long startTime = System.currentTimeMillis();
 		try {
@@ -192,7 +207,7 @@ public class Solr {
 	}
 
 	public void solrQuery(String queryWord) {
-		init();
+		getServer(HTTP);
 		try {
 			// 创建Solr查询
 			SolrQuery query = new SolrQuery(queryWord);
@@ -250,8 +265,8 @@ public class Solr {
 	 *            待搜索的关键字
 	 */
 	public Point<String, List<String>> spellcheck(String term) {
-		System.out.println("spellcheck test"+term);
-		init();
+		System.out.println("spellcheck test" + term);
+		getServer(HTTP);
 		SolrQuery query = new SolrQuery();
 		// 选择合适的handler
 		query.set("qt", "/spell/leven");
@@ -276,55 +291,46 @@ public class Solr {
 		// System.out.println("collate: \n\t" + collate);
 		return new Point<String, List<String>>(collate, list);
 	}
-	Document doc=null;
 
-	
-	public void createXMLFile(List<String> list){
-	
-		
-		String word=null;
-		Iterator<String> it=list.iterator();
-		//创建Document
-		 doc=DocumentHelper.createDocument();
-		Element rootElement=doc.addElement("words");
-		while(it.hasNext()){
-			word=it.next();
-			Element ele=rootElement.addElement("word");
+	Document doc = null;
+
+	public void createXMLFile(List<String> list) {
+
+		String word = null;
+		Iterator<String> it = list.iterator();
+		// 创建Document
+		doc = DocumentHelper.createDocument();
+		Element rootElement = doc.addElement("words");
+		while (it.hasNext()) {
+			word = it.next();
+			Element ele = rootElement.addElement("word");
 			ele.setText(word);
 		}
-		
-		
-	      
-	   
-		
+
 	}
-	
-	
-	
-	 /**
-     * 创建xml文件
-     * @param fileName
-     */ 
-    public void createXml(String fileName,List<String> list)  
-    {    
-    	createXMLFile(list);
-        try {    
-            //Writer fileWriter=new FileWriter(fileName);
-        	
-            OutputFormat outFormat = OutputFormat.createPrettyPrint();
-            outFormat.setEncoding("UTF-8");
-            outFormat.setTrimText(false);
-            
-            XMLWriter xmlWriter=new XMLWriter(new FileOutputStream(fileName),outFormat); 
-            
-            xmlWriter.write(doc);   //写入文件中 
-            xmlWriter.close();   
-            } catch (IOException e) {    
-                System.out.println(e.getMessage());    
-            }    
-    }    
-	
-	
-	
-	
+
+	/**
+	 * 创建xml文件
+	 * 
+	 * @param fileName
+	 */
+	public void createXml(String fileName, List<String> list) {
+		createXMLFile(list);
+		try {
+			// Writer fileWriter=new FileWriter(fileName);
+
+			OutputFormat outFormat = OutputFormat.createPrettyPrint();
+			outFormat.setEncoding("UTF-8");
+			outFormat.setTrimText(false);
+
+			XMLWriter xmlWriter = new XMLWriter(new FileOutputStream(fileName),
+					outFormat);
+
+			xmlWriter.write(doc); // 写入文件中
+			xmlWriter.close();
+		} catch (IOException e) {
+			System.out.println(e.getMessage());
+		}
+	}
+
 }

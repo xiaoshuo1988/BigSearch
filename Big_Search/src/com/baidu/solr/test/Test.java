@@ -120,7 +120,7 @@ public class Test {
 	@org.junit.Test
 	public void sendToTK() {
 		//String filePath = "E:\\linux 共享\\Solr+Nutch+Lucene相关资料\\原材料";
-		 String filePath = "C:\\Users\\lenovo\\Desktop\\原材料\\郭春光.docx";
+		 String filePath = "/opt/solr_tomcat/materials";
 		Solr solr = new Solr();
 		solr.sendToSolrTK(filePath);
 	}
